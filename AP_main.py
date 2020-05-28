@@ -1,21 +1,17 @@
 from tkinter import *
 import time
-import openpyxl  # save and manipulate excel files
 import os
 import datetime
 import calendar
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from fuzzywuzzy import fuzz
 import csv
 import shutil
+import pandas as pd
 import chromedriver_autoinstaller
 
-# get the username and userpath--------------------------------------------------------------------
 username = os.environ['USERNAME']
 username = username.split(".")
 name = ""
@@ -24,68 +20,16 @@ for x in username:
     name = name + " " + x
 username = name[1:]
 userpath = os.environ['USERPROFILE']
-
-# master list path to automation names and directories--------------------------------------
-# faclistpath = userpath + '\\Desktop\\Month End Reporting Package Automation.xlsx'
-faclistpath = 'P:\\PACS\\Finance\\General Info\\Finance Misc\\Facility List.xlsx'  # change path when ready for all buildings
-
-
-# faclistpath = os.environ['USERPROFILE'] + '\\Documents\\Facility List.xlsx' # testing pyinstaller
-
-# create a dictionary from Facility list with 3 values per key in list form----------------------
-def new_dict(column1, column2, column3, column4, column5):
-    facwb = openpyxl.load_workbook(faclistpath)
-    facws = facwb['Automation']
-    list1 = []
-    for cell in facws[column1]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list1.append(cell.value)
-
-    list2 = []
-    for cell in facws[column2]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list2.append(cell.value)
-
-    list3 = []
-    for cell in facws[column3]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list3.append(cell.value)
-
-    list4 = []
-    for cell in facws[column4]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list4.append(cell.value)
-
-    list5 = []
-    for cell in facws[column5]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list5.append(cell.value)
-
-    valuelist = list(zip(list2, list3, list4, list5))
-
-    # create dictionary of the names
-    new_dict = dict(zip(list1, valuelist))
-    return new_dict
-
-
-facilitydict = new_dict('D', 'A', 'F', 'E','G')  # selenium name, common name, finance folder path, business unit, admin folder path
-
-
-# create date variables---------------------------------------------------------------------------
 today = datetime.date.today()
 n_month = today.month - 1  # previous month as number
 w_month = calendar.month_abbr[n_month]  # previous month as abbreviation of word
 full_month = calendar.month_name[n_month]  # previous month full name
-
 if n_month == 12:  # get the year of the previous month then make string
     d_year = str(today.year - 1)
 else:
     d_year = str(today.year)
-
 num_month = n_month  # integer number for month
-
 n_month = str(n_month)
-
 if len(n_month) == 1:  # make month a string
     n_month = "0" + str(n_month)
 else:
@@ -96,7 +40,6 @@ def check_if_selected(building):
     try:
         if building in check_boxes.keys():
             if check_boxes[building] == 0:
-                # callback(building + " is not selected.  Going to next facility")
                 return False
             else:
                 callback(building)
@@ -144,7 +87,7 @@ def find_updated_driver():
         try:
             callback('Updating chrome driver to newer version')
             shutil.copyfile(folder + 'chromedriver ' + max(file_list) + '.exe',
-                            os.environ['USERPROFILE'] + '\\Documents\\chromedriver ' + max(file_list) + '.exe')
+                            os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + max(file_list) + '.exe')
         except:
             callback("Couldn't update driver automatically")
         return max(file_list)
@@ -152,7 +95,7 @@ def find_updated_driver():
 
 # check the current driver version on your computer
 def find_current_driver():
-    folder = os.environ['USERPROFILE'] + '\\Documents\\'
+    folder = os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\'
     file_list = []
     if os.path.isdir(folder):
         list_items = os.listdir(folder)
@@ -231,7 +174,7 @@ class LoginPCC:
         self.driver.find_element(By.NAME, 'inc_only_pay').click()  # uncheck include only vendors
         self.driver.find_element(By.NAME, "check_date").click()  # update check date
         self.driver.find_element(By.NAME, "check_date").send_keys(6 * Keys.BACKSPACE)
-        self.driver.find_element(By.NAME, "check_date").send_keys(4 * Keys.DELETE)
+        self.driver.find_element(By.NAME, "check_date").send_keys(6 * Keys.DELETE)
         self.driver.find_element(By.NAME, "check_date").send_keys(checkdatetext)
         dropdown = self.driver.find_element(By.NAME, "select_invoices_by")  # select Due Date
         dropdown.find_element(By.CSS_SELECTOR,
@@ -308,15 +251,15 @@ def start_PCC():
 
 
 def Run_Check_Run(checkdate, paythrudate):
-    callback("Running Check Run")
-    start_PCC()
     global fac
     global facname
+    callback("Running Check Run")
+    start_PCC()
     for fac in facilitydict:
-        facname = facilitydict[fac][0]
-        facpath = facilitydict[fac][1]
-        if check_if_selected(facname) == True:      # is this facility selected?
-            PCC.buildingSelect(fac)                 # go to the next building
+        print(fac)
+        facname = facilitydict[fac][1]
+        if check_if_selected(fac):      # is this facility selected?
+            PCC.buildingSelect(facname)                 # go to the next building
             time.sleep(1)                           # wait to load
             PCC.Check_Run(checkdate, paythrudate)   # run
     PCC.teardown_method()  # end of process
@@ -352,44 +295,12 @@ def print_checkboxes():
         callback("No facilities have been selected")
 
 
-def make_fac_list(column1, column2):
-    facwb = openpyxl.load_workbook(faclistpath)
-    facws = facwb['Automation']
-    list1 = []
-    for cell in facws[column1]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list1.append(cell.value)
-
-    list2 = []
-    for cell in facws[column2]:
-        if (cell.value != 'Null') and (cell.row != 1):
-            list2.append(cell.value)
-
-    # create dictionary of the names
-    make_fac_list = dict(zip(list1, list2))
-
-    return make_fac_list
-
-
-def make_accoutant_list(column1):
-    facwb = openpyxl.load_workbook(faclistpath)
-    facws = facwb['Automation']
-    list1 = ["All"]
-    for cell in facws[column1]:
-        if (cell.value != 'Null') and (cell.row != 1) and (cell.value not in list1):
-            list1.append(cell.value)
-    return list1
-
-
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
 root.title("Providence Group AP Payments v1.3")
 # root.geometry("%dx%d+%d+%d" % (1200, 400, 1000, 200))
 root.resizable(False, False)
 # root.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
-
-facilities = make_fac_list('A', 'H')  # make facility list for checkboxes (facname, accountant)
-accountantlist = make_accoutant_list('H')  # make list of all accountants
 
 
 def new_winF():  # new window definition
@@ -415,6 +326,7 @@ def new_winF():  # new window definition
         for status in check_boxes:
             check_boxes[status] = check_boxes[status].get()
         newwin.destroy()
+        print(check_boxes)
 
     def select_all():
         for status in check_boxes:
@@ -425,10 +337,10 @@ def new_winF():  # new window definition
             check_boxes[status].set(0)
 
     global check_boxes
-    check_boxes = {facility: IntVar() for facility in newfacilities}  # create dict of check_boxes
+    check_boxes = {facility: IntVar() for facility in facilityindex}  # create dict of check_boxes
     i = 0
     r = 0
-    for facility in newfacilities:  # loop to add boxes from list
+    for facility in facilityindex:  # loop to add boxes from list
         i += 1
         l = Checkbutton(boxframe, text=facility, variable=check_boxes[facility], bg=headcolor)
         if i <= 10:
@@ -565,21 +477,6 @@ def callback(message):  # update the statusbox gui
     statusbox.update()
 
 
-def boxtext(new_value):  # dropdown menu
-    item = dropbox.get()
-    global newfacilities
-    newfacilities = []
-    for building in facilities:
-        newfacilities.append(building)
-    # if item == "All":
-    #     for building in facilities:
-    #         newfacilities.append(building)
-    #     else:
-    #         for building in facilities:
-    #             if facilities[building] == item:
-    #                 newfacilities.append(building)
-
-
 headcolor = "#d7eef5"
 framecolor = "#d7eef5"
 footcolor = "#d7eef5"
@@ -610,14 +507,6 @@ welcomelabel.config(font=88)
 currentmonthlabel = Label(headframe, text="Current Month: " + calendar.month_abbr[today.month] + " " + str(today.year), bg=headcolor)
 currentmonthlabel.grid(row=1, column=0, sticky="nsew")
 
-# dropdown box
-data = accountantlist
-dropbox = StringVar()
-dropbox.set('All')
-boxtext("All")
-dropdownbox = OptionMenu(headframe, dropbox, *data, command=boxtext)
-# dropdownbox.grid(row=3, column=0)
-
 # create the buttons
 # downloads frame buttons - middle frames
 checkrunbutton = Button(downloadsframe, text="Run PCC System Batch", padx=5, pady=5, width=35, command=get_date_win)
@@ -635,5 +524,27 @@ choosefacbutton.grid(row=1, column=0, pady=5, sticky="nsew")
 
 statuslabel = Label(footframe, text="Status Box:", bg=footcolor)
 statuslabel.grid(row=0, column=0, sticky="nsew")
+
+
+# get paths to map out how data flows if not connected to the VPN
+try:
+    faclistpath = "P:\\PACS\\Finance\\Automation\\PCC Reporting\\pcc webscraping.xlsx"
+    try:
+        os.mkdir(userpath + '\\Documents\\AP Check Runs\\')  # make directory for backup in documents folder
+        shutil.copyfile(faclistpath, userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # make backup file
+    except FileExistsError:
+        shutil.copyfile(faclistpath, userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # if folder exists just copy
+except FileNotFoundError:  # if VPN is not connected use the one last saved
+    try:
+        faclistpath = userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx'
+    except:
+        callback("data cannot be connected. Please connect to the VPN")
+
+
+facility_df = pd.read_excel(faclistpath, sheet_name='Automation', index_col=0)
+facilityindex = facility_df.index.to_list()
+fac_number = facility_df['Business Unit'].to_list()
+pcc_name = facility_df['PCC Name'].to_list()
+facilitydict = dict(zip(facilityindex, zip(fac_number, pcc_name)))
 
 root.mainloop()
