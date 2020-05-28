@@ -256,7 +256,6 @@ def Run_Check_Run(checkdate, paythrudate):
     callback("Running Check Run")
     start_PCC()
     for fac in facilitydict:
-        print(fac)
         facname = facilitydict[fac][1]
         if check_if_selected(fac):      # is this facility selected?
             PCC.buildingSelect(facname)                 # go to the next building
@@ -326,7 +325,6 @@ def new_winF():  # new window definition
         for status in check_boxes:
             check_boxes[status] = check_boxes[status].get()
         newwin.destroy()
-        print(check_boxes)
 
     def select_all():
         for status in check_boxes:
