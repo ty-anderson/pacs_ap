@@ -297,7 +297,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v1.3")
+root.title("Providence Group AP Payments v1.4")
 # root.geometry("%dx%d+%d+%d" % (1200, 400, 1000, 200))
 root.resizable(False, False)
 # root.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
