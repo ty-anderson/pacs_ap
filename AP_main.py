@@ -538,8 +538,12 @@ except FileNotFoundError:  # if VPN is not connected use the one last saved
     except:
         callback("data cannot be connected. Please connect to the VPN")
 
-
+# create dataframe from master listing
 facility_df = pd.read_excel(faclistpath, sheet_name='Automation', index_col=0)
+# remove the ALF's and ILF's
+for row in facility_df.itertuples():
+    if 'ALF' in row.Index or 'ILF' in row.Index:
+        facility_df = facility_df.drop([row.Index])
 facilityindex = facility_df.index.to_list()
 fac_number = facility_df['Business Unit'].to_list()
 pcc_name = facility_df['PCC Name'].to_list()
