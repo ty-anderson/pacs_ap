@@ -5,6 +5,9 @@ import shutil
 import pyautogui
 
 folder = os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\'
+if not os.path.isdir(folder):
+    os.mkdir(os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\')
+
 file_list = []
 if os.path.isdir(folder):
     list_items = os.listdir(folder)
@@ -33,6 +36,7 @@ if os.path.isdir(folder):
             ask = pyautogui.confirm(text='The program has an update, do you wish to proceed?', title='Update Availible',
                               buttons=['Yes', 'No'])
             if ask == 'Yes':
+                print('Updating program...Please wait.')
                 shutil.copyfile(folder + 'APCheckRuns ' + max(file_list) + '.exe',
                                 os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\APCheckRuns ' + max(
                                     file_list) + '.exe')

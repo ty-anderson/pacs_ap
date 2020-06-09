@@ -113,11 +113,11 @@ class LoginPCC:
             # chromedriver_autoinstaller.install()
             latestdriver = find_current_driver()
             self.driver = webdriver.Chrome(
-                os.environ['USERPROFILE'] + '\\Documents\\chromedriver ' + str(latestdriver) + '.exe')
+                os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
         except:
             latestdriver = find_updated_driver()
             self.driver = webdriver.Chrome(
-                os.environ['USERPROFILE'] + '\\Documents\\chromedriver ' + str(latestdriver) + '.exe')
+                os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
         self.driver.get('https://login.pointclickcare.com/home/userLogin.xhtml?ESOLGuid=40_1572368815140')
         time.sleep(5)
         try:
