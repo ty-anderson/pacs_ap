@@ -20,6 +20,8 @@ for x in username:
     name = name + " " + x
 username = name[1:]
 userpath = os.environ['USERPROFILE']
+now = datetime.datetime.now()
+now = str(now.year) + " " + str(now.month) + " " + str(now.day) + " " + str(now.hour) + " " + str(now.minute)
 today = datetime.date.today()
 n_month = today.month - 1  # previous month as number
 w_month = calendar.month_abbr[n_month]  # previous month as abbreviation of word
@@ -34,6 +36,7 @@ if len(n_month) == 1:  # make month a string
     n_month = "0" + str(n_month)
 else:
     n_month = str(n_month)
+
 
 
 def check_if_selected(building):
@@ -57,7 +60,17 @@ def get_micr_name(name):  # convert pcc name to qb name
         callback("Could not find KEYTOTAL bank")
 
 
-def write_to_csv(filename,building,date,total,entries):
+def to_text(message):
+    try:
+        s = str(datetime.datetime.now().strftime("%H:%M:%S")) + ">>  " + str(message) + "\n"
+        with open('P:\\PACS\\Finance\\Automation\\PCC AP Check Runs\\logs\\Py ' + username + ' ' + str(now) + '.txt', 'a') as file:
+            file.write(s)
+            file.close()
+    except:
+        pass
+
+
+def write_to_csv(filename, building, date, total, entries):
     check = os.path.exists(filename)
 
     if check == True:
@@ -67,7 +80,7 @@ def write_to_csv(filename,building,date,total,entries):
     else:
         with open(filename, 'w', newline='') as csvfile:
             filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-            filewriter.writerow(["Building","Created Date","Batch Total","Num Entries"])
+            filewriter.writerow(["Building", "Created Date", "Batch Total", "Num Entries"])
 
         with open(filename, 'a', newline='') as csvfile:
             filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
@@ -87,7 +100,8 @@ def find_updated_driver():
         try:
             callback('Updating chrome driver to newer version')
             shutil.copyfile(folder + 'chromedriver ' + max(file_list) + '.exe',
-                            os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + max(file_list) + '.exe')
+                            os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + max(
+                                file_list) + '.exe')
         except:
             callback("Couldn't update driver automatically")
         return max(file_list)
@@ -118,7 +132,7 @@ class LoginPCC:
             latestdriver = find_updated_driver()
             self.driver = webdriver.Chrome(
                 os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
-        self.driver.get('https://login.pointclickcare.com/home/userLogin.xhtml?ESOLGuid=40_1572368815140')
+        self.driver.get('https://login.pointclickcare.com/home/userLogin.xhtml')
         time.sleep(5)
         try:
             usernamex = self.driver.find_element(By.ID, 'username')
@@ -127,7 +141,8 @@ class LoginPCC:
             passwordx.send_keys(passwordtext)
             self.driver.find_element(By.ID, 'login-button').click()
         except:
-            self.driver.get('https://www12.pointclickcare.com/home/login.jsp?ESOLGuid=40_1595946502980') # security login page
+            self.driver.get(
+                'https://www12.pointclickcare.com/home/login.jsp?ESOLGuid=40_1595946502980')  # security login page
             time.sleep(8)
             try:
                 usernamex = self.driver.find_element(By.ID, 'id-un')
@@ -199,14 +214,17 @@ class LoginPCC:
         window_after = self.driver.window_handles[1]  # set second window
         self.driver.switch_to.window(window_after)  # select the second window
         try:
-            self.driver.find_element(By.CSS_SELECTOR, "#runButton > input").click() # save the pmt batch
+            self.driver.find_element(By.CSS_SELECTOR, "#runButton > input").click()  # save the pmt batch
             # self.driver.close() #for testing
             self.driver.switch_to.window(window_before)  # select the original window
-            createddate = self.driver.find_element(By.CSS_SELECTOR, "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(5)").text  # get text
+            createddate = self.driver.find_element(By.CSS_SELECTOR,
+                                                   "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(5)").text  # get text
             print(createddate)
-            batchtotal = self.driver.find_element(By.CSS_SELECTOR, "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(6)").text  # get text
-            batchtotal = batchtotal.replace(",","")
-            numentries = self.driver.find_element(By.CSS_SELECTOR,"body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(7)").text  # get text
+            batchtotal = self.driver.find_element(By.CSS_SELECTOR,
+                                                  "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(6)").text  # get text
+            batchtotal = batchtotal.replace(",", "")
+            numentries = self.driver.find_element(By.CSS_SELECTOR,
+                                                  "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(7)").text  # get text
             # self.driver.find_element(By.CSS_SELECTOR,"body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr:nth-child(2) > td:nth-child(1) > a:nth-child(4)").click()  # post
         except:
             callback("Run button did not populate for this building")
@@ -215,7 +233,7 @@ class LoginPCC:
             createddate = 'None'
             batchtotal = 'None'
             numentries = 'None'
-        write_to_csv('pmt log.csv',facname,createddate,batchtotal,numentries)
+        write_to_csv('pmt log.csv', facname, createddate, batchtotal, numentries)
 
     def Check_Run_Post(self):  # download the income statement m-to-m report (FULLY WORKING)
         self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp')
@@ -224,14 +242,17 @@ class LoginPCC:
         except:
             pass
         try:
-            check_table = self.driver.find_element(By.CSS_SELECTOR,"body > form > table > tbody > tr:nth-child(8) > td > div > table")  # get the table webelement
-            for row in check_table.find_elements(By.CSS_SELECTOR,"body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr"): # loop through table elements
-                for cell in row.find_elements(By.TAG_NAME,'td'): # loop through each cell of each row of the table
+            check_table = self.driver.find_element(By.CSS_SELECTOR,
+                                                   "body > form > table > tbody > tr:nth-child(8) > td > div > table")  # get the table webelement
+            for row in check_table.find_elements(By.CSS_SELECTOR,
+                                                 "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr"):  # loop through table elements
+                for cell in row.find_elements(By.TAG_NAME, 'td'):  # loop through each cell of each row of the table
                     try:
-                        if facname in self.driver.find_element(By.CSS_SELECTOR,"#pccFacLink").text: # verify the correct building is selected
+                        if facname in self.driver.find_element(By.CSS_SELECTOR,
+                                                               "#pccFacLink").text:  # verify the correct building is selected
                             cell_text = cell.text
-                            if cell.text[:9] == "Check Run":                     # only post the descriptions with check run
-                                callback(facname + ': posting ' + cell_text)     # notify of the posting
+                            if cell.text[:9] == "Check Run":  # only post the descriptions with check run
+                                callback(facname + ': posting ' + cell_text)  # notify of the posting
                                 row.find_element(By.LINK_TEXT, 'post').click()
                                 alert_obj = self.driver.switch_to.alert
                                 alert_obj.accept()
@@ -257,10 +278,10 @@ def Run_Check_Run(checkdate, paythrudate):
     start_PCC()
     for fac in facilitydict:
         facname = facilitydict[fac][1]
-        if check_if_selected(fac):      # is this facility selected?
-            PCC.buildingSelect(facname)                 # go to the next building
-            time.sleep(1)                           # wait to load
-            PCC.Check_Run(checkdate, paythrudate)   # run
+        if check_if_selected(fac):  # is this facility selected?
+            PCC.buildingSelect(facname)  # go to the next building
+            time.sleep(1)  # wait to load
+            PCC.Check_Run(checkdate, paythrudate)  # run
     PCC.teardown_method()  # end of process
     callback("Process has finished")
 
@@ -271,12 +292,12 @@ def Run_Check_Run_Post():
     global fac
     global facname
     for fac in facilitydict:
-        facname = facilitydict[fac][0]
+        facname = fac
         if check_if_selected(facname) == True:  # is this facility selected?
-            PCC.buildingSelect(fac)             # go to the next building
-            time.sleep(1)                       # wait to load
-            PCC.Check_Run_Post()                # run
-    PCC.teardown_method()                       # end of process
+            PCC.buildingSelect(fac)  # go to the next building
+            time.sleep(1)  # wait to load
+            PCC.Check_Run_Post()  # run
+    PCC.teardown_method()  # end of process
     callback("Process has finished")
 
 
@@ -296,9 +317,11 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.07.28")
+root.title("Providence Group AP Payments v2020.07.29")
 # root.geometry("%dx%d+%d+%d" % (1200, 400, 1000, 200))
 root.resizable(False, False)
+
+
 # root.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
 
 
@@ -347,7 +370,6 @@ def new_winF():  # new window definition
             r += 1
             i = 1
             l.grid(row=i, column=r, sticky=W)
-
 
     savebutton = Button(scframe, padx=2, pady=2, width=15, text="Save and Close", command=get_value)
     selectallbutton = Button(saframe, padx=2, pady=2, width=15, text="Select All", command=select_all)
@@ -473,6 +495,7 @@ def callback(message):  # update the statusbox gui
     statusbox.insert(END, s)
     statusbox.see(END)
     statusbox.update()
+    to_text(message)
 
 
 headcolor = "#d7eef5"
@@ -502,13 +525,15 @@ statusbox.grid(row=1, column=0, columnspan=10)
 welcomelabel = Label(headframe, text="Welcome " + username, bg=headcolor)
 welcomelabel.grid(row=0, column=0)
 welcomelabel.config(font=88)
-currentmonthlabel = Label(headframe, text="Current Month: " + calendar.month_abbr[today.month] + " " + str(today.year), bg=headcolor)
+currentmonthlabel = Label(headframe, text="Current Month: " + calendar.month_abbr[today.month] + " " + str(today.year),
+                          bg=headcolor)
 currentmonthlabel.grid(row=1, column=0, sticky="nsew")
 
 # create the buttons
 # downloads frame buttons - middle frames
 checkrunbutton = Button(downloadsframe, text="Run PCC System Batch", padx=5, pady=5, width=35, command=get_date_win)
-postcheckrunbutton = Button(downloadsframe, text="Post PCC Check Batches", padx=5, pady=5, width=35, command=post_checks_win)
+postcheckrunbutton = Button(downloadsframe, text="Post PCC Check Batches", padx=5, pady=5, width=35,
+                            command=post_checks_win)
 # add the buttons
 checkrunbutton.grid(row=8, pady=5, sticky="nsew")
 postcheckrunbutton.grid(row=9, pady=5, sticky="nsew")
@@ -523,7 +548,6 @@ choosefacbutton.grid(row=1, column=0, pady=5, sticky="nsew")
 statuslabel = Label(footframe, text="Status Box:", bg=footcolor)
 statuslabel.grid(row=0, column=0, sticky="nsew")
 
-
 # get paths to map out how data flows if not connected to the VPN
 try:
     faclistpath = "P:\\PACS\\Finance\\Automation\\PCC Reporting\\pcc webscraping.xlsx"
@@ -531,7 +555,8 @@ try:
         os.mkdir(userpath + '\\Documents\\AP Check Runs\\')  # make directory for backup in documents folder
         shutil.copyfile(faclistpath, userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # make backup file
     except FileExistsError:
-        shutil.copyfile(faclistpath, userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # if folder exists just copy
+        shutil.copyfile(faclistpath,
+                        userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # if folder exists just copy
 except FileNotFoundError:  # if VPN is not connected use the one last saved
     try:
         faclistpath = userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx'
