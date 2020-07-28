@@ -127,7 +127,7 @@ class LoginPCC:
             passwordx.send_keys(passwordtext)
             self.driver.find_element(By.ID, 'login-button').click()
         except:
-            self.driver.get('https://www12.pointclickcare.com/home/login.jsp?ESOLGuid=40_1588626472396') # security login page
+            self.driver.get('https://www12.pointclickcare.com/home/login.jsp?ESOLGuid=40_1595946502980') # security login page
             time.sleep(8)
             try:
                 usernamex = self.driver.find_element(By.ID, 'id-un')
@@ -142,19 +142,19 @@ class LoginPCC:
         self.driver.quit()
 
     def buildingSelect(self, building):  # select your building (FULLY WORKING)
-        self.driver.get("https://www12.pointclickcare.com/emc/home.jsp")
+        self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
         self.driver.find_element(By.ID, "pccFacLink").click()
         time.sleep(1)
         try:
             self.driver.find_element(By.PARTIAL_LINK_TEXT, building).click()
         except:
-            self.driver.get("https://www12.pointclickcare.com/emc/home.jsp")
+            self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
             callback("Could not locate " + building + " in PCC")
 
     def Check_Run(self, checkdatetext, paythrutext):  # download the income statement m-to-m report (FULLY WORKING)
         window_before = self.driver.window_handles[0]  # make window tab object
         time.sleep(1)
-        self.driver.get('https://www12.pointclickcare.com/glap/ap/processing/batchlist.jsp')
+        self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp')
         try:
             self.driver.find_element(By.LINK_TEXT, "Payments").click()
         except:
@@ -218,7 +218,7 @@ class LoginPCC:
         write_to_csv('pmt log.csv',facname,createddate,batchtotal,numentries)
 
     def Check_Run_Post(self):  # download the income statement m-to-m report (FULLY WORKING)
-        self.driver.get('https://www12.pointclickcare.com/glap/ap/processing/batchlist.jsp')
+        self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp')
         try:
             self.driver.find_element(By.LINK_TEXT, "Payments").click()
         except:
@@ -296,7 +296,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v1.4")
+root.title("Providence Group AP Payments v2020.07.28")
 # root.geometry("%dx%d+%d+%d" % (1200, 400, 1000, 200))
 root.resizable(False, False)
 # root.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
