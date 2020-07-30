@@ -383,7 +383,11 @@ def Run_Import_Feeds():
                 PCC.buildingSelect(fac)  # go to the next building
                 time.sleep(1)
                 PCC.Import_Feeds(file_up, fac, batch_total)
-        # PCC.teardown_method()
+            if batch_total == 0:
+                callback('No $ amt in filename')
+            if not matched:
+                callback('No facility matched to file BU number')
+    PCC.teardown_method()
     callback("Process has finished")
 
 
@@ -404,7 +408,7 @@ def print_checkboxes():
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
 root.title("Providence Group AP Payments v2020.07.29")
-# root.geometry("%dx%d+%d+%d" % (1200, 400, 1000, 200))
+# root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
 
