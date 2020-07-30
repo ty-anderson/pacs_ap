@@ -41,6 +41,7 @@ else:
 
 
 def check_if_selected(building):
+    """Function to only run on checkmarked facilities"""
     try:
         if building in check_boxes.keys():
             if check_boxes[building] == 0:
@@ -62,6 +63,7 @@ def get_micr_name(name):  # convert pcc name to qb name
 
 
 def to_text(message):
+    """Create text file on shared drive to log messages for developer reference"""
     try:
         s = str(datetime.datetime.now().strftime("%H:%M:%S")) + ">>  " + str(message) + "\n"
         with open('P:\\PACS\\Finance\\Automation\\PCC AP Check Runs\\logs\\Py ' + username + ' ' + str(now) + '.txt', 'a') as file:
@@ -72,6 +74,7 @@ def to_text(message):
 
 
 def write_to_csv(filename, building, date, total, entries):
+    """Create a file for AP to reference and review before posting checks"""
     check = os.path.exists(filename)
 
     if check:
@@ -90,6 +93,7 @@ def write_to_csv(filename, building, date, total, entries):
 
 # get latest driver from the shared drive and add to user documents folder
 def find_updated_driver():
+    """Pulls newest chromdriver from shared drive if current isn't working"""
     folder = 'P:\\PACS\\Finance\\Automation\\Chromedrivers\\'
     file_list = []
     if os.path.isdir(folder):
@@ -110,6 +114,7 @@ def find_updated_driver():
 
 # check the current driver version on your computer
 def find_current_driver():
+    """Use current chromedriver in Documents folder"""
     folder = os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\'
     file_list = []
     if os.path.isdir(folder):
@@ -121,9 +126,9 @@ def find_current_driver():
         return max(file_list)
 
 
-# login
 class LoginPCC:
-    def __init__(self):  # create an instance of this class. Begins by logging in
+    def __init__(self):
+        """Opens new Chrome instance and logs into PCC"""
         try:
             # chromedriver_autoinstaller.install()
             latestdriver = find_current_driver()
@@ -154,10 +159,12 @@ class LoginPCC:
             except:
                 callback('There was an issue with logging into PCC.')
 
-    def teardown_method(self):  # exit the program (FULLY WORKING)
+    def teardown_method(self):
+        """Close the browser used for webscraper"""
         self.driver.quit()
 
-    def buildingSelect(self, building):  # select your building (FULLY WORKING)
+    def buildingSelect(self, building):
+        """Select the building based on partial name match known as 'Common Name'"""
         self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
         self.driver.find_element(By.ID, "pccFacLink").click()
         time.sleep(1)
@@ -167,7 +174,8 @@ class LoginPCC:
             self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
             callback("Could not locate " + building + " in PCC")
 
-    def Check_Run(self, checkdatetext, paythrutext):  # download the income statement m-to-m report (FULLY WORKING)
+    def Check_Run(self, checkdatetext, paythrutext):
+        """Webscraper to create check batches in PCC"""
         window_before = self.driver.window_handles[0]  # make window tab object
         time.sleep(1)
         self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp')
@@ -236,7 +244,8 @@ class LoginPCC:
             numentries = 'None'
         write_to_csv('pmt log.csv', facname, createddate, batchtotal, numentries)
 
-    def Check_Run_Post(self):  # download the income statement m-to-m report (FULLY WORKING)
+    def Check_Run_Post(self):
+        """Webscraper to post check batches in PCC"""
         self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp')
         try:
             self.driver.find_element(By.LINK_TEXT, "Payments").click()
@@ -264,7 +273,8 @@ class LoginPCC:
         except:
             callback("Could not post for " + facname)
 
-    def Import_Feeds(self, filepath, fac):
+    def Import_Feeds(self, filepath, facility, batch_total):
+        """Webscraper for importing feeds to PCC"""
         self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp?ESOLview=Invoice')
         window_before = self.driver.window_handles[0]  # make window tab object
         self.driver.find_element(By.CSS_SELECTOR, 'body > form > table > tbody > tr:nth-child(5) > td > input:nth-child(2)').click()
@@ -282,22 +292,32 @@ class LoginPCC:
         element_list = self.driver.find_elements(By.XPATH, '//*[@value="Exceptions Report"]')
         if len(element_list) == 0:
             """Click the import button"""
-            # self.driver.find_element((By.XPATH, '//*[@value="Commit"]'))
-            callback(fac + ' imported successfully')
+            self.driver.find_element((By.XPATH, '//*[@value="Commit"]'))
+            alert_obj = self.driver.switch_to.alert
+            alert_obj.accept()
+            self.driver.close()
+            self.driver.switch_to.window(window_before)
+            self.driver.find_element(By.PARTIAL_LINK_TEXT, 'post').click()
+            window_after = self.driver.window_handles[1]
+            self.driver.switch_to.window(window_after)
+            self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
+            # self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # turn on when complete
+            callback(facility + ' imported successfully')
         else:
-            callback('exceptions for ' + fac)
-        self.driver.close()
+            callback('exceptions---' + facility)
+            self.driver.close()
         self.driver.switch_to.window(window_before)
 
 
-# start up selenium
 def start_PCC():
+    """Startup webbrowswer and login to PCC"""
     global PCC
     PCC = LoginPCC()
     time.sleep(5)
 
 
 def Run_Check_Run(checkdate, paythrudate):
+    """Create check batches in PCC using webscraper"""
     global fac
     global facname
     callback("Running Check Run")
@@ -313,6 +333,7 @@ def Run_Check_Run(checkdate, paythrudate):
 
 
 def Run_Check_Run_Post():
+    """Post check batches in PCC with webscraper"""
     callback("Running Check Run Posting")
     start_PCC()
     global fac
@@ -326,6 +347,8 @@ def Run_Check_Run_Post():
 
 
 def Run_Import_Feeds():
+    """Import procurement feeds into PCC with webscraper"""
+    """BU in filename identfies the facility, $ amt in filename confirms amount"""
     global fac
     callback("Importing feeds")
     feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\'
@@ -333,7 +356,7 @@ def Run_Import_Feeds():
     if len(feeds_folder) != 0:
         start_PCC()
         for filename in feeds_folder:                               # loop through files in dir
-            matched = False
+            matched, batch_total = False, 0
             callback(filename)
             filename_split = filename.split('_')
             for c in filename_split:                                # parse filename text for BU
@@ -346,14 +369,20 @@ def Run_Import_Feeds():
                                 break
                     except:
                         pass
-                if matched:
+                try:
+                    b = c[:1]                                       # check first character of list item
+                    if b == '$':                                    # find the dollar amt item
+                        batch_total = c[2:-4]
+                except:
+                    pass
+                if (matched is True) and (batch_total != 0):        # on match then go into PCC
                     break
-            if matched:
+            if (matched is True) and (batch_total != 0):
                 callback("matched---" + fac)
                 file_up = feeds + filename
                 PCC.buildingSelect(fac)  # go to the next building
                 time.sleep(1)
-                PCC.Import_Feeds(file_up, fac)
+                PCC.Import_Feeds(file_up, fac, batch_total)
         # PCC.teardown_method()
     callback("Process has finished")
 
