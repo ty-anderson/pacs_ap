@@ -10,7 +10,9 @@ from fuzzywuzzy import fuzz
 import csv
 import shutil
 import pandas as pd
-import chromedriver_autoinstaller
+
+global fac
+global facname
 
 username = os.environ['USERNAME']
 username = username.split(".")
@@ -38,7 +40,6 @@ else:
     n_month = str(n_month)
 
 
-
 def check_if_selected(building):
     try:
         if building in check_boxes.keys():
@@ -48,7 +49,7 @@ def check_if_selected(building):
                 callback(building)
                 return True
     except:
-        callback(building + " is not selected.  Trying next facility")
+        pass
 
 
 def get_micr_name(name):  # convert pcc name to qb name
@@ -56,8 +57,8 @@ def get_micr_name(name):  # convert pcc name to qb name
     if fuzzcheck == 100:
         return "Match"
     else:
-        return "No match"
         callback("Could not find KEYTOTAL bank")
+        return "No match"
 
 
 def to_text(message):
@@ -73,7 +74,7 @@ def to_text(message):
 def write_to_csv(filename, building, date, total, entries):
     check = os.path.exists(filename)
 
-    if check == True:
+    if check:
         with open(filename, 'a', newline='') as csvfile:
             filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
             filewriter.writerow([building, date, total, entries])
@@ -263,6 +264,31 @@ class LoginPCC:
         except:
             callback("Could not post for " + facname)
 
+    def Import_Feeds(self, filepath, fac):
+        self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp?ESOLview=Invoice')
+        window_before = self.driver.window_handles[0]  # make window tab object
+        self.driver.find_element(By.CSS_SELECTOR, 'body > form > table > tbody > tr:nth-child(5) > td > input:nth-child(2)').click()
+        window_after = self.driver.window_handles[1]
+        self.driver.switch_to.window(window_after)  # select the new window
+        upload_element = self.driver.find_element(By.NAME, 'previewFile')
+        upload_element.send_keys(filepath)
+        time.sleep(1)
+        self.driver.find_element(By.XPATH, '//*[@id="fileUpload"]/td/input[2]').click()
+        while True:
+            if self.driver.find_element(By.ID, 'tableTitle').text != 'IMPORT DATA PREVIEW':
+                time.sleep(1)
+            else:
+                break
+        element_list = self.driver.find_elements(By.XPATH, '//*[@value="Exceptions Report"]')
+        if len(element_list) == 0:
+            """Click the import button"""
+            # self.driver.find_element((By.XPATH, '//*[@value="Commit"]'))
+            callback(fac + ' imported successfully')
+        else:
+            callback('exceptions for ' + fac)
+        self.driver.close()
+        self.driver.switch_to.window(window_before)
+
 
 # start up selenium
 def start_PCC():
@@ -290,10 +316,8 @@ def Run_Check_Run_Post():
     callback("Running Check Run Posting")
     start_PCC()
     global fac
-    global facname
     for fac in facilitydict:
-        facname = fac
-        if check_if_selected(facname) == True:  # is this facility selected?
+        if check_if_selected(fac):  # is this facility selected?
             PCC.buildingSelect(fac)  # go to the next building
             time.sleep(1)  # wait to load
             PCC.Check_Run_Post()  # run
@@ -301,11 +325,44 @@ def Run_Check_Run_Post():
     callback("Process has finished")
 
 
+def Run_Import_Feeds():
+    global fac
+    callback("Importing feeds")
+    feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\'
+    feeds_folder = os.listdir(feeds)                         # get list of files in dir
+    if len(feeds_folder) != 0:
+        start_PCC()
+        for filename in feeds_folder:                               # loop through files in dir
+            matched = False
+            callback(filename)
+            filename_split = filename.split('_')
+            for c in filename_split:                                # parse filename text for BU
+                if len(c) <= 2:
+                    try:
+                        c = int(c)                                  # BU pulled from filename
+                        for fac in facilitydict:                    # loop facilitydict to find BU match
+                            if facilitydict[fac][0] == c:           # check if match
+                                matched = True
+                                break
+                    except:
+                        pass
+                if matched:
+                    break
+            if matched:
+                callback("matched---" + fac)
+                file_up = feeds + filename
+                PCC.buildingSelect(fac)  # go to the next building
+                time.sleep(1)
+                PCC.Import_Feeds(file_up, fac)
+        # PCC.teardown_method()
+    callback("Process has finished")
+
+
 def print_checkboxes():
     try:
         listoffacilities = ""
-        for x in check_boxes:
-            if check_boxes[x] == 1:
+        for z in check_boxes:
+            if check_boxes[z] == 1:
                 listoffacilities = listoffacilities + ", " + x
         if listoffacilities == "":
             callback("No facilities have been selected")
@@ -490,6 +547,53 @@ def post_checks_win():  # new window definition
     newwin.mainloop()
 
 
+def feeds_win():  # new window definition
+    newwin = Toplevel(root, bg=headcolor)
+    newwin.title("Import Feeds")
+    newwin.resizable(False, False)
+
+    # newwin.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
+
+    def getentrytext():
+        global usernametext
+        global passwordtext
+        usernametext = username.get()
+        passwordtext = password.get()
+        newwin.destroy()
+        Run_Import_Feeds()
+
+    boxframe = Frame(newwin, bg=headcolor, pady=10, bd=10)
+    scframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
+    saframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
+    caframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
+
+    # newwin.grid_rowconfigure(0, weight=1)
+    # newwin.grid_columnconfigure(0, weight=1)
+
+    boxframe.grid(row=0, columnspan=2)
+    scframe.grid(row=2, column=0)
+    saframe.grid(row=1, column=0)
+    welcomelabel.grid(row=0, column=0)
+    welcomelabel.config(font=22)
+
+    # login info labels
+    usernamelabel = Label(saframe, text="PCC Username", bg=headcolor)
+    usernamelabel.grid(row=3, column=0)
+    passwordlabel = Label(saframe, text="PCC Password", bg=headcolor)
+    passwordlabel.grid(row=4, column=0)
+    # login info entry
+    username = Entry(saframe)
+    username.insert(0, "pghc." + name[1].lower() + name.split(" ")[2].lower())
+    username.grid(row=3, column=1)
+    password = Entry(saframe, show="*")
+    password.grid(row=4, column=1)
+
+    runbutton = Button(scframe, padx=2, pady=2, width=15, text="Run", command=getentrytext)
+    runbutton.grid(row=11, sticky="nsew")
+
+    newwin.mainloop()
+
+
 def callback(message):  # update the statusbox gui
     s = str(datetime.datetime.now().strftime("%H:%M:%S")) + ">>" + str(message) + "\n"
     statusbox.insert(END, s)
@@ -532,11 +636,13 @@ currentmonthlabel.grid(row=1, column=0, sticky="nsew")
 # create the buttons
 # downloads frame buttons - middle frames
 checkrunbutton = Button(downloadsframe, text="Run PCC System Batch", padx=5, pady=5, width=35, command=get_date_win)
-postcheckrunbutton = Button(downloadsframe, text="Post PCC Check Batches", padx=5, pady=5, width=35,
-                            command=post_checks_win)
+postcheckrunbutton = Button(downloadsframe, text="Post PCC Check Batches", padx=5, pady=5, width=35, command=post_checks_win)
+runfeedsbutton = Button(downloadsframe, text="Run Feeds Import", padx=5, pady=5, width=35, command=feeds_win)
+
 # add the buttons
 checkrunbutton.grid(row=8, pady=5, sticky="nsew")
 postcheckrunbutton.grid(row=9, pady=5, sticky="nsew")
+runfeedsbutton.grid(row=10, pady=5, sticky="nsew")
 
 # other frame buttons
 choosefacbutton = Button(otherframe, text="Select Facilities", padx=5, pady=5, width=35,
