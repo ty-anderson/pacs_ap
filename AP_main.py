@@ -292,19 +292,42 @@ class LoginPCC:
         element_list = self.driver.find_elements(By.XPATH, '//*[@value="Exceptions Report"]')
         if len(element_list) == 0:
             """Click the import button"""
-            self.driver.find_element((By.XPATH, '//*[@value="Commit"]'))
-            alert_obj = self.driver.switch_to.alert
-            alert_obj.accept()
-            self.driver.close()
-            self.driver.switch_to.window(window_before)
-            self.driver.find_element(By.PARTIAL_LINK_TEXT, 'post').click()
-            window_after = self.driver.window_handles[1]
-            self.driver.switch_to.window(window_after)
-            self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
-            self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # final post
-            callback(facility + ' imported successfully')
+            time.sleep(5)
+            self.driver.find_element(By.XPATH, '//*[@value="Commit"]').click()
+            while True:
+                try:
+                    alert_obj = self.driver.switch_to.alert
+                    message = alert_obj.text
+                    if "Commit complete!" in message:
+                        alert_obj.accept()
+                        break
+                    elif "Commit could not start because another" in message:
+                        alert_obj.accept()
+                        self.driver.close()
+                        self.driver.switch_to.window(window_before)
+                        callback('PCC too slow--try again later.')
+                        break
+                    else:
+                        callback('unknown issue importing')
+                        break
+                except:
+                    time.sleep(1)
+            if "Commit complete!" in message:
+                self.driver.close()
+                self.driver.switch_to.window(window_before)
+                self.driver.find_element(By.PARTIAL_LINK_TEXT, 'post').click()
+                time.sleep(2)
+                window_after = self.driver.window_handles[1]
+                self.driver.switch_to.window(window_after)
+                self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
+                time.sleep(1)
+                # self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # final post
+                self.driver.close()  # delete when final post is used
+                callback(facility + ' imported successfully')
+                callbackn()
         else:
             callback('exceptions---' + facility)
+            callbackn()
             self.driver.close()
         self.driver.switch_to.window(window_before)
 
@@ -351,13 +374,14 @@ def Run_Import_Feeds():
     """BU in filename identfies the facility, $ amt in filename confirms amount"""
     global fac
     callback("Importing feeds")
+    callbackn()
     feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\'
     feeds_folder = os.listdir(feeds)                         # get list of files in dir
     if len(feeds_folder) != 0:
         start_PCC()
         for filename in feeds_folder:                               # loop through files in dir
             matched, batch_total = False, 0
-            callback(filename)
+            callback(filename[:55])
             filename_split = filename.split('_')
             for c in filename_split:                                # parse filename text for BU
                 if len(c) <= 2:
@@ -372,7 +396,7 @@ def Run_Import_Feeds():
                 try:
                     b = c[:1]                                       # check first character of list item
                     if b == '$':                                    # find the dollar amt item
-                        batch_total = c[2:-4]
+                        batch_total = c[1:-4]
                 except:
                     pass
                 if (matched is True) and (batch_total != 0):        # on match then go into PCC
@@ -384,9 +408,11 @@ def Run_Import_Feeds():
                 time.sleep(1)
                 PCC.Import_Feeds(file_up, fac, batch_total)
             if batch_total == 0:
-                callback('No $ amt in filename')
+                callback('No $ in filename')
+                callbackn()
             if not matched:
-                callback('No facility matched to file BU number')
+                callback('No BU in filename')
+                callbackn()
     PCC.teardown_method()
     callback("Process has finished")
 
@@ -629,6 +655,14 @@ def feeds_win():  # new window definition
 
 def callback(message):  # update the statusbox gui
     s = str(datetime.datetime.now().strftime("%H:%M:%S")) + ">>" + str(message) + "\n"
+    statusbox.insert(END, s)
+    statusbox.see(END)
+    statusbox.update()
+    to_text(message)
+
+
+def callbackn(message=''):  # update the statusbox gui
+    s = "-" + str(message) + "\n"
     statusbox.insert(END, s)
     statusbox.see(END)
     statusbox.update()
