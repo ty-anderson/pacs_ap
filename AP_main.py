@@ -301,7 +301,7 @@ class LoginPCC:
             window_after = self.driver.window_handles[1]
             self.driver.switch_to.window(window_after)
             self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
-            # self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # turn on when complete
+            self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # final post
             callback(facility + ' imported successfully')
         else:
             callback('exceptions---' + facility)
