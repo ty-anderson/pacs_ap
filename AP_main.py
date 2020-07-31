@@ -476,22 +476,15 @@ root.title("Providence Group AP Payments v2020.07.29")
 root.resizable(False, False)
 
 
-# root.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
-
-
 def new_winF():  # new window definition
     newwin = Toplevel(root, bg=headcolor)
     newwin.title("Select Facility")
     newwin.resizable(False, False)
-    # newwin.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
 
     boxframe = Frame(newwin, bg=headcolor, pady=10, bd=10)
     scframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     saframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     caframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
-
-    # newwin.grid_rowconfigure(0, weight=1)
-    # newwin.grid_columnconfigure(0, weight=1)
 
     boxframe.grid(row=0, columnspan=3)
     scframe.grid(row=1, column=0)
@@ -540,8 +533,6 @@ def get_date_win():  # new window definition
     newwin.title("Start Check Run")
     newwin.resizable(False, False)
 
-    # newwin.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
-
     def getentrytext():
         global usernametext
         global passwordtext
@@ -556,9 +547,6 @@ def get_date_win():  # new window definition
     scframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     saframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     caframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
-
-    # newwin.grid_rowconfigure(0, weight=1)
-    # newwin.grid_columnconfigure(0, weight=1)
 
     boxframe.grid(row=0, columnspan=2)
     scframe.grid(row=2, column=0)
@@ -602,8 +590,6 @@ def post_checks_win():  # new window definition
     newwin.title("Post check run batches")
     newwin.resizable(False, False)
 
-    # newwin.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
-
     def getentrytext():
         global usernametext
         global passwordtext
@@ -616,9 +602,6 @@ def post_checks_win():  # new window definition
     scframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     saframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     caframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
-
-    # newwin.grid_rowconfigure(0, weight=1)
-    # newwin.grid_columnconfigure(0, weight=1)
 
     boxframe.grid(row=0, columnspan=2)
     scframe.grid(row=2, column=0)
@@ -649,8 +632,6 @@ def feeds_win():  # new window definition
     newwin.title("Import Feeds")
     newwin.resizable(False, False)
 
-    # newwin.iconbitmap("C:\\Users\\tyler.anderson\\Documents\\Python\\Projects\\PCC HUB\\PACS Logo.ico")
-
     def getentrytext():
         global usernametext
         global passwordtext
@@ -663,9 +644,6 @@ def feeds_win():  # new window definition
     scframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     saframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
     caframe = Frame(newwin, bg=headcolor, pady=4, bd=10)
-
-    # newwin.grid_rowconfigure(0, weight=1)
-    # newwin.grid_columnconfigure(0, weight=1)
 
     boxframe.grid(row=0, columnspan=2)
     scframe.grid(row=2, column=0)
@@ -759,20 +737,20 @@ choosefacbutton.grid(row=1, column=0, pady=5, sticky="nsew")
 statuslabel = Label(footframe, text="Status Box:", bg=footcolor)
 statuslabel.grid(row=0, column=0, sticky="nsew")
 
-# get paths to map out how data flows if not connected to the VPN
-try:
+try:  # GET MOST UPDATED MASTER FILE FROM SHARED DRIVE
     faclistpath = "P:\\PACS\\Finance\\Automation\\PCC Reporting\\pcc webscraping.xlsx"
     try:
-        os.mkdir(userpath + '\\Documents\\AP Check Runs\\')  # make directory for backup in documents folder
-        shutil.copyfile(faclistpath, userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # make backup file
+        os.mkdir(userpath + '\\Documents\\AP Check Runs\\')  # IF FOLDER DOESN'T EXIST
+        shutil.copyfile(faclistpath, userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # ADD FILE
     except FileExistsError:
         shutil.copyfile(faclistpath,
-                        userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # if folder exists just copy
-except FileNotFoundError:  # if VPN is not connected use the one last saved
+                        userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx')  # IF FOLDER EXISTS
+except FileNotFoundError:  # IF VPN IS NOT CONNECTED THEN USE THE LAST ONE
     try:
         faclistpath = userpath + '\\Documents\\AP Check Runs\\pcc webscraping.xlsx'
     except:
         callback("data cannot be connected. Please connect to the VPN")
+        faclistpath = ''
 
 # create dataframe from master listing
 facility_df = pd.read_excel(faclistpath, sheet_name='Automation', index_col=0)
