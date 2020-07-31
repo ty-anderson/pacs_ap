@@ -276,10 +276,11 @@ class LoginPCC:
     def Import_Feeds(self, filepath, facility, batch_total):
         """Webscraper for importing feeds to PCC"""
         self.driver.get('https://www30.pointclickcare.com/glap/ap/processing/batchlist.jsp?ESOLview=Invoice')
+        time.sleep(2)
         window_before = self.driver.window_handles[0]  # make window tab object
         self.driver.find_element(By.CSS_SELECTOR, 'body > form > table > tbody > tr:nth-child(5) > td > input:nth-child(2)').click()
         window_after = self.driver.window_handles[1]
-        self.driver.switch_to.window(window_after)  # select the new window
+        self.driver.switch_to.window(window_after)
         upload_element = self.driver.find_element(By.NAME, 'previewFile')
         upload_element.send_keys(filepath)
         time.sleep(1)
@@ -291,16 +292,37 @@ class LoginPCC:
                 break
         element_list = self.driver.find_elements(By.XPATH, '//*[@value="Exceptions Report"]')
         if len(element_list) == 0:
-            """Click the import button"""
-            time.sleep(5)
+            time.sleep(3)
             self.driver.find_element(By.XPATH, '//*[@value="Commit"]').click()
+            """Importing a file"""
             while True:
                 try:
                     alert_obj = self.driver.switch_to.alert
                     message = alert_obj.text
                     if "Commit complete!" in message:
                         alert_obj.accept()
-                        break
+                        self.driver.close()
+                        self.driver.switch_to.window(window_before)
+                        self.driver.find_element(By.PARTIAL_LINK_TEXT, 'post').click()
+                        time.sleep(2)
+                        window_after = self.driver.window_handles[1]
+                        self.driver.switch_to.window(window_after)
+                        self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
+                        time.sleep(1)
+                        self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # final post
+                        # self.driver.close()  # delete when final post is used
+                        callback(facility + ' imported successfully')
+                        callbackn()
+                        """Close all windows but the base"""
+                        while True:
+                            win = self.driver.window_handles
+                            if len(win) > 1:
+                                window_after = self.driver.window_handles[1]
+                                self.driver.switch_to.window(window_after)
+                                self.driver.close()
+                            else:
+                                self.driver.switch_to.window(window_before)
+                                return True
                     elif "Commit could not start because another" in message:
                         alert_obj.accept()
                         self.driver.close()
@@ -312,33 +334,19 @@ class LoginPCC:
                         break
                 except:
                     time.sleep(1)
-            if "Commit complete!" in message:
-                self.driver.close()
-                self.driver.switch_to.window(window_before)
-                self.driver.find_element(By.PARTIAL_LINK_TEXT, 'post').click()
-                time.sleep(2)
-                window_after = self.driver.window_handles[1]
-                self.driver.switch_to.window(window_after)
-                self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
-                time.sleep(1)
-                self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # final post
-                # self.driver.close()  # delete when final post is used
-                callback(facility + ' imported successfully')
-                callbackn()
-                while True:
-                    win = self.driver.window_handles
-                    if len(win) > 1:
-                        window_after = self.driver.window_handles[1]
-                        self.driver.switch_to.window(window_after)
-                        self.driver.close()
-                    else:
-                        self.driver.switch_to.window(window_before)
-                        break
         else:
             callback('exceptions---' + facility)
             callbackn()
-            self.driver.close()
-        self.driver.switch_to.window(window_before)
+            """Close all windows but the base"""
+            while True:
+                win = self.driver.window_handles
+                if len(win) > 1:
+                    window_after = self.driver.window_handles[1]
+                    self.driver.switch_to.window(window_after)
+                    self.driver.close()
+                else:
+                    self.driver.switch_to.window(window_before)
+                    return False
 
 
 def start_PCC():
@@ -411,11 +419,15 @@ def Run_Import_Feeds():
                 if (matched is True) and (batch_total != 0):        # on match then go into PCC
                     break
             if (matched is True) and (batch_total != 0):
+                """Import to PCC"""
                 callback("matched---" + fac)
                 file_up = feeds + filename
                 PCC.buildingSelect(fac)  # go to the next building
                 time.sleep(1)
-                PCC.Import_Feeds(file_up, fac, batch_total)
+                import_success = PCC.Import_Feeds(file_up, fac, batch_total)
+                if import_success:
+                    """Move file on succesful import"""
+                    shutil.move(file_up, 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\TESTING\\')
             if batch_total == 0:
                 callback('No $ in filename')
                 callbackn()
