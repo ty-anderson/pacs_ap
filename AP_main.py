@@ -285,21 +285,20 @@ class LoginPCC:
         upload_element.send_keys(filepath)
         time.sleep(1)
         self.driver.find_element(By.XPATH, '//*[@id="fileUpload"]/td/input[2]').click()
-        while True:
+        while True:  # WAIT LOOP FOR IMPORT LOAD
             if self.driver.find_element(By.ID, 'tableTitle').text != 'IMPORT DATA PREVIEW':
                 time.sleep(1)
             else:
                 break
         element_list = self.driver.find_elements(By.XPATH, '//*[@value="Exceptions Report"]')
-        if len(element_list) == 0:
+        if len(element_list) == 0:  # IMPORTING A FILE
             time.sleep(3)
             self.driver.find_element(By.XPATH, '//*[@value="Commit"]').click()
-            """Importing a file"""
-            while True:
+            while True:  # IMPORT LOOP
                 try:
                     alert_obj = self.driver.switch_to.alert
                     message = alert_obj.text
-                    if "Commit complete!" in message:
+                    if "Commit complete!" in message:  # IMPORT SUCESS
                         alert_obj.accept()
                         self.driver.close()
                         self.driver.switch_to.window(window_before)
@@ -309,12 +308,11 @@ class LoginPCC:
                         self.driver.switch_to.window(window_after)
                         self.driver.find_element(By.ID, 'batchTotal').send_keys(batch_total)
                         time.sleep(1)
-                        self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # final post
-                        # self.driver.close()  # delete when final post is used
+                        self.driver.find_element(By.XPATH, '//*[@id="postButton"]').click()  # FINAL POST
+                        time.sleep(1)
                         callback(facility + ' imported successfully')
                         callbackn()
-                        """Close all windows but the base"""
-                        while True:
+                        while True:  # CLOSE ALL WINDOWS BUT THE BASE
                             win = self.driver.window_handles
                             if len(win) > 1:
                                 window_after = self.driver.window_handles[1]
@@ -323,22 +321,41 @@ class LoginPCC:
                             else:
                                 self.driver.switch_to.window(window_before)
                                 return True
-                    elif "Commit could not start because another" in message:
+                    elif "Commit could not start because another" in message:  # IMPORT FAIL
                         alert_obj.accept()
                         self.driver.close()
                         self.driver.switch_to.window(window_before)
                         callback('PCC too slow--try again later.')
-                        break
-                    else:
+                        callbackn()
+                        while True:  # CLOSE ALL WINDOWS BUT THE BASE
+                            win = self.driver.window_handles
+                            if len(win) > 1:
+                                window_after = self.driver.window_handles[1]
+                                self.driver.switch_to.window(window_after)
+                                self.driver.close()
+                            else:
+                                self.driver.switch_to.window(window_before)
+                                return False
+                    else:  # IMPORT FAIL
+                        """Import fail all others"""
                         callback('unknown issue importing')
-                        break
+                        callbackn()
+                        while True:  # CLOSE ALL WINDOWS BUT THE BASE
+                            win = self.driver.window_handles
+                            if len(win) > 1:
+                                window_after = self.driver.window_handles[1]
+                                self.driver.switch_to.window(window_after)
+                                self.driver.close()
+                            else:
+                                self.driver.switch_to.window(window_before)
+                                return False
                 except:
                     time.sleep(1)
         else:
+            """Import fail due to exceptions"""
             callback('exceptions---' + facility)
             callbackn()
-            """Close all windows but the base"""
-            while True:
+            while True:  # CLOSE ALL WINDOWS BUT THE BASE
                 win = self.driver.window_handles
                 if len(win) > 1:
                     window_after = self.driver.window_handles[1]
