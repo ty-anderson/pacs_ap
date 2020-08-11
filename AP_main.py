@@ -23,6 +23,7 @@ for x in username:
 username = name[1:]
 userpath = os.environ['USERPROFILE']
 now = datetime.datetime.now()
+now_folder = str(now.year) + '-' + str(now.month) + '-' + str(now.day)
 now = str(now.year) + " " + str(now.month) + " " + str(now.day) + " " + str(now.hour) + " " + str(now.minute)
 today = datetime.date.today()
 n_month = today.month - 1  # previous month as number
@@ -414,43 +415,52 @@ def Run_Import_Feeds():
     if len(feeds_folder) != 0:
         start_PCC()
         for filename in feeds_folder:                               # loop through files in dir
-            matched, batch_total = False, 0
-            callback(filename[:55])
-            filename_split = filename.split('_')
-            for c in filename_split:                                # parse filename text for BU
-                if len(c) <= 2:
+            if filename.endswith('.csv'):                           # only csv files
+                matched, batch_total = False, 0
+                callback(filename[:55])
+                filename_split = filename.split('_')
+                for c in filename_split:                                # parse filename text for BU
+                    if len(c) <= 2:
+                        try:
+                            c = int(c)                                  # BU pulled from filename
+                            for fac in facilitydict:                    # loop facilitydict to find BU match
+                                if facilitydict[fac][0] == c:           # check if match
+                                    matched = True
+                                    break
+                        except:
+                            pass
                     try:
-                        c = int(c)                                  # BU pulled from filename
-                        for fac in facilitydict:                    # loop facilitydict to find BU match
-                            if facilitydict[fac][0] == c:           # check if match
-                                matched = True
-                                break
+                        b = c[:1]                                       # check first character of list item
+                        if b == '$':                                    # find the dollar amt item
+                            batch_total = c[1:-4]
                     except:
                         pass
-                try:
-                    b = c[:1]                                       # check first character of list item
-                    if b == '$':                                    # find the dollar amt item
-                        batch_total = c[1:-4]
-                except:
-                    pass
-                if (matched is True) and (batch_total != 0):        # on match then go into PCC
-                    break
-            if (matched is True) and (batch_total != 0):
-                """Import to PCC"""
-                callback("matched---" + fac)
-                file_up = feeds + filename
-                PCC.buildingSelect(fac)  # go to the next building
-                time.sleep(1)
-                import_success = PCC.Import_Feeds(file_up, fac, batch_total)
-                if import_success:
-                    """Move file on succesful import"""
-                    shutil.move(file_up, 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\TESTING\\')
-            if batch_total == 0:
-                callback('No $ in filename')
-                callbackn()
-            if not matched:
-                callback('No BU in filename')
-                callbackn()
+                    if (matched is True) and (batch_total != 0):        # on match then go into PCC
+                        break
+                if (matched is True) and (batch_total != 0):
+                    """Import to PCC"""
+                    callback("matched---" + fac)
+                    file_up = feeds + filename
+                    if fac == 'All Saints':
+                        fac = 'All Saints Subacute'
+                    PCC.buildingSelect(fac)  # go to the next building
+                    time.sleep(1)
+                    import_success = PCC.Import_Feeds(file_up, fac, batch_total)
+                    if import_success:
+                        """Move file on succesful import"""
+                        try:
+                            os.mkdir('P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\' + now_folder)
+                        except:
+                            pass
+                        new_folder = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\' + now_folder
+                        shutil.move(file_up, new_folder)
+                        callback(filename + ' successful')
+                if batch_total == 0:
+                    callback('No $ in filename')
+                    callbackn()
+                if not matched:
+                    callback('No BU in filename')
+                    callbackn()
     PCC.teardown_method()
     callback("Process has finished")
 
@@ -471,7 +481,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.07.29")
+root.title("Providence Group AP Payments v2020.08.11")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
