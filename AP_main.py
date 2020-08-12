@@ -443,6 +443,8 @@ def Run_Import_Feeds():
                     file_up = feeds + filename
                     if fac == 'All Saints':
                         fac = 'All Saints Subacute'
+                    elif fac == 'Valley View':
+                        fac = 'Elmcrest'
                     PCC.buildingSelect(fac)  # go to the next building
                     time.sleep(1)
                     import_success = PCC.Import_Feeds(file_up, fac, batch_total)
@@ -481,7 +483,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.08.11")
+root.title("Providence Group AP Payments v2020.08.12")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
@@ -762,10 +764,8 @@ except FileNotFoundError:  # IF VPN IS NOT CONNECTED THEN USE THE LAST ONE
         callback("data cannot be connected. Please connect to the VPN")
         faclistpath = ''
 
-# create dataframe from master listing
-facility_df = pd.read_excel(faclistpath, sheet_name='Automation', index_col=0)
-# remove the ALF's and ILF's
-for row in facility_df.itertuples():
+facility_df = pd.read_excel(faclistpath, sheet_name='Automation', index_col=0)  # DATAFRAME FROM MASTER LISTING
+for row in facility_df.itertuples():        # REMOVE ALF'S AND ILF'S
     if 'ALF' in row.Index or 'ILF' in row.Index:
         facility_df = facility_df.drop([row.Index])
 facilityindex = facility_df.index.to_list()
