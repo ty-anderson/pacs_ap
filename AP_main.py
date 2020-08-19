@@ -445,6 +445,8 @@ def Run_Import_Feeds():
                         fac = 'All Saints Subacute'
                     elif fac == 'Valley View':
                         fac = 'Elmcrest'
+                    elif fac == 'Kern River':
+                        fac = 'Kern River Transitional'
                     PCC.buildingSelect(fac)  # go to the next building
                     time.sleep(1)
                     import_success = PCC.Import_Feeds(file_up, fac, batch_total)
@@ -483,7 +485,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.08.12")
+root.title("Providence Group AP Payments v2020.08.19")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
