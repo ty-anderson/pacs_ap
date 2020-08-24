@@ -184,6 +184,7 @@ class LoginPCC:
             self.driver.find_element(By.LINK_TEXT, "Payments").click()
         except:
             pass
+        time.sleep(2)
         self.driver.find_element(By.XPATH, "/html/body/form/table/tbody/tr[5]/td/input[1]").click()
         window_after = self.driver.window_handles[1]  # set second tab
         self.driver.switch_to.window(window_after)  # select the second tab
@@ -485,7 +486,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.08.19")
+root.title("Providence Group AP Payments v2020.08.24")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
