@@ -59,7 +59,7 @@ def get_micr_name(name):  # convert pcc name to qb name
     if fuzzcheck == 100:
         return "Match"
     else:
-        callback("Could not find KEYTOTAL bank")
+        # callback(name + " is not KEYTOTAL bank")
         return "No match"
 
 
