@@ -448,6 +448,8 @@ def Run_Import_Feeds():
                         fac = 'Elmcrest'
                     elif fac == 'Kern River':
                         fac = 'Kern River Transitional'
+                    elif fac == 'Pinecrest':
+                        fac = 'San Miguel'
                     PCC.buildingSelect(fac)  # go to the next building
                     time.sleep(1)
                     import_success = PCC.Import_Feeds(file_up, fac, batch_total)
