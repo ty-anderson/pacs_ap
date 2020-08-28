@@ -171,9 +171,11 @@ class LoginPCC:
         time.sleep(1)
         try:
             self.driver.find_element(By.PARTIAL_LINK_TEXT, building).click()
+            return True
         except:
             self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
             callback("Could not locate " + building + " in PCC")
+            return False
 
     def Check_Run(self, checkdatetext, paythrutext):
         """Webscraper to create check batches in PCC"""
@@ -383,9 +385,12 @@ def Run_Check_Run(checkdate, paythrudate):
     start_PCC()
     for fac in facilitydict:
         facname = facilitydict[fac][1]
+        bu = str(facilitydict[fac][0])
+        if len(bu) < 2:
+            bu = str(0) + bu
         if check_if_selected(fac):  # is this facility selected?
-            PCC.buildingSelect(facname)  # go to the next building
-            time.sleep(1)  # wait to load
+            PCC.buildingSelect(bu)  # go to the next building
+            time.sleep(1)
             PCC.Check_Run(checkdate, paythrudate)  # run
     PCC.teardown_method()  # end of process
     callback("Process has finished")
@@ -397,8 +402,11 @@ def Run_Check_Run_Post():
     start_PCC()
     global fac
     for fac in facilitydict:
-        if check_if_selected(fac):  # is this facility selected?
-            PCC.buildingSelect(fac)  # go to the next building
+        bu = str(facilitydict[fac][0])
+        if len(bu) < 2:
+            bu = str(0) + bu
+        if check_if_selected(fac):                    # CHECH IF WE SELECTED THIS BUILDING
+            PCC.buildingSelect(bu)  # SELECT BUILIDING BY BU
             time.sleep(1)  # wait to load
             PCC.Check_Run_Post()  # run
     PCC.teardown_method()  # end of process
@@ -424,6 +432,7 @@ def Run_Import_Feeds():
                     if len(c) <= 2:
                         try:
                             c = int(c)                                  # BU pulled from filename
+                            bu = str(c)
                             for fac in facilitydict:                    # loop facilitydict to find BU match
                                 if facilitydict[fac][0] == c:           # check if match
                                     matched = True
@@ -442,26 +451,19 @@ def Run_Import_Feeds():
                     """Import to PCC"""
                     callback("matched---" + fac)
                     file_up = feeds + filename
-                    if fac == 'All Saints':
-                        fac = 'All Saints Subacute'
-                    elif fac == 'Valley View':
-                        fac = 'Elmcrest'
-                    elif fac == 'Kern River':
-                        fac = 'Kern River Transitional'
-                    elif fac == 'Pinecrest':
-                        fac = 'San Miguel'
-                    PCC.buildingSelect(fac)  # go to the next building
-                    time.sleep(1)
-                    import_success = PCC.Import_Feeds(file_up, fac, batch_total)
-                    if import_success:
-                        """Move file on succesful import"""
-                        try:
-                            os.mkdir('P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\' + now_folder)
-                        except:
-                            pass
-                        new_folder = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\' + now_folder
-                        shutil.move(file_up, new_folder)
-                        callback(filename + ' successful')
+                    building_success = PCC.buildingSelect(bu)  # go to the next building
+                    if building_success:
+                        time.sleep(1)
+                        import_success = PCC.Import_Feeds(file_up, fac, batch_total)
+                        if import_success:
+                            """Move file on succesful import"""
+                            try:
+                                os.mkdir('P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\' + now_folder)
+                            except:
+                                pass
+                            new_folder = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\' + now_folder
+                            shutil.move(file_up, new_folder)
+                            callback(filename + ' successful')
                 if batch_total == 0:
                     callback('No $ in filename')
                     callbackn()
@@ -488,7 +490,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.08.24")
+root.title("Providence Group AP Payments v2020.08.26")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
