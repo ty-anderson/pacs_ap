@@ -262,17 +262,15 @@ class LoginPCC:
                                                  "body > form > table > tbody > tr:nth-child(8) > td > div > table > tbody > tr"):  # loop through table elements
                 for cell in row.find_elements(By.TAG_NAME, 'td'):  # loop through each cell of each row of the table
                     try:
-                        if facname in self.driver.find_element(By.CSS_SELECTOR,
-                                                               "#pccFacLink").text:  # verify the correct building is selected
-                            cell_text = cell.text
-                            if cell.text[:9] == "Check Run":  # only post the descriptions with check run
-                                callback(facname + ': posting ' + cell_text)  # notify of the posting
-                                row.find_element(By.LINK_TEXT, 'post').click()
-                                alert_obj = self.driver.switch_to.alert
-                                alert_obj.accept()
-                                break
+                        cell_text = cell.text
+                        if cell.text[:9] == "Check Run":  # only post the descriptions with check run
+                            callback(facname + ': posting ' + cell_text)  # notify of the posting
+                            row.find_element(By.LINK_TEXT, 'post').click()
+                            alert_obj = self.driver.switch_to.alert
+                            alert_obj.accept()
+                            break
                     except:
-                        callback("There was an issue selecting the correct building.  Going to next building")
+                        callback("There was an issue posting. Going to next building")
                         break
         except:
             callback("Could not post for " + facname)
@@ -389,9 +387,10 @@ def Run_Check_Run(checkdate, paythrudate):
         if len(bu) < 2:
             bu = str(0) + bu
         if check_if_selected(fac):  # is this facility selected?
-            PCC.buildingSelect(bu)  # go to the next building
-            time.sleep(1)
-            PCC.Check_Run(checkdate, paythrudate)  # run
+            building_success = PCC.buildingSelect(bu)  # go to the next building
+            if building_success:
+                time.sleep(1)
+                PCC.Check_Run(checkdate, paythrudate)  # run
     PCC.teardown_method()  # end of process
     callback("Process has finished")
 
@@ -406,9 +405,10 @@ def Run_Check_Run_Post():
         if len(bu) < 2:
             bu = str(0) + bu
         if check_if_selected(fac):                    # CHECH IF WE SELECTED THIS BUILDING
-            PCC.buildingSelect(bu)  # SELECT BUILIDING BY BU
-            time.sleep(1)  # wait to load
-            PCC.Check_Run_Post()  # run
+            building_success = PCC.buildingSelect(bu)  # SELECT BUILIDING BY BU
+            if building_success:
+                time.sleep(1)  # wait to load
+                PCC.Check_Run_Post()  # run
     PCC.teardown_method()  # end of process
     callback("Process has finished")
 
