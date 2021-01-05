@@ -419,7 +419,7 @@ def Run_Import_Feeds():
     global fac
     callback("Importing feeds")
     callbackn()
-    feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\Test\\'
+    feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\'
     feeds_folder = os.listdir(feeds)                         # get list of files in dir
     if len(feeds_folder) != 0:
         start_PCC()
