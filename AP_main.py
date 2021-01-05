@@ -419,7 +419,7 @@ def Run_Import_Feeds():
     global fac
     callback("Importing feeds")
     callbackn()
-    feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\'
+    feeds = 'P:\\PACS\\Finance\\AP\\DS_Uploaded_Data\\PROCUREMENT FEED\\Test\\'
     feeds_folder = os.listdir(feeds)                         # get list of files in dir
     if len(feeds_folder) != 0:
         start_PCC()
@@ -431,10 +431,10 @@ def Run_Import_Feeds():
                 for c in filename_split:                                # parse filename text for BU
                     if len(c) <= 2:
                         try:
-                            c = int(c)                                  # BU pulled from filename
+                            bu_num = int(c)                                  # BU pulled from filename
                             bu = str(c)
                             for fac in facilitydict:                    # loop facilitydict to find BU match
-                                if facilitydict[fac][0] == c:           # check if match
+                                if facilitydict[fac][0] == bu_num:           # check if match
                                     matched = True
                                     break
                         except:
@@ -490,7 +490,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.08.26")
+root.title("Providence Group AP Payments v2020.08.28")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
