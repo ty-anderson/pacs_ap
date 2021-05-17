@@ -164,17 +164,31 @@ class LoginPCC:
         """Close the browser used for webscraper"""
         self.driver.quit()
 
-    def buildingSelect(self, building):
-        """Select the building based on partial name match known as 'Common Name'"""
-        self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
-        self.driver.find_element(By.ID, "pccFacLink").click()
-        time.sleep(1)
+    def buildingSelect(self, bu):
+        """Select the building using business unit"""
         try:
-            self.driver.find_element(By.PARTIAL_LINK_TEXT, building).click()
-            return True
+            current_fac = self.driver.find_element(By.NAME, "current_fac_id").get_attribute("value")
+            if str(current_fac) != bu:
+                try:
+                    self.driver.find_element(By.ID, "pccFacLink").click()
+                    time.sleep(1)
+                    building_list = self.driver.find_element(By.ID, "optionList")
+                    options_split = building_list.text.splitlines()
+                    for option in options_split:
+                        bu_pull = option.replace(" ", "")
+                        bu_pull = bu_pull[-5:].split("-")
+                        bu_val = bu_pull[1]
+                        if bu_val == bu:
+                            print(option)
+                            building_list.find_element(By.PARTIAL_LINK_TEXT, option).click()
+                            return True
+                except:
+                    to_text("Could not locate " + bu + " in PCC")
+                    return False
+            else:
+                return True
         except:
-            self.driver.get("https://www30.pointclickcare.com/home/home.jsp?ESOLnewlogin=Y")
-            callback("Could not locate " + building + " in PCC")
+            to_text("Could not find the building dropdown menu")
             return False
 
     def Check_Run(self, checkdatetext, paythrutext):
