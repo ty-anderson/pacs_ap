@@ -1,6 +1,5 @@
 from tkinter import *
 import time
-import os
 import datetime
 import calendar
 from selenium import webdriver
@@ -8,8 +7,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from fuzzywuzzy import fuzz
 import csv
-import shutil
 import pandas as pd
+import glob
+from win32com.client import Dispatch
+import requests, zipfile, io, shutil, os
+from bs4 import BeautifulSoup
 
 global fac
 global facname
@@ -95,22 +97,20 @@ def write_to_csv(filename, building, date, total, entries):
 # get latest driver from the shared drive and add to user documents folder
 def find_updated_driver():
     """Pulls newest chromdriver from shared drive if current isn't working"""
-    folder = 'P:\\PACS\\Finance\\Automation\\Chromedrivers\\'
-    file_list = []
-    if os.path.isdir(folder):
-        list_items = os.listdir(folder)
-        for item in list_items:
-            file = item.split(" ")
-            if file[0] == 'chromedriver':
-                file_list.append(file[1][:2])
-        try:
-            callback('Updating chrome driver to newer version')
-            shutil.copyfile(folder + 'chromedriver ' + max(file_list) + '.exe',
-                            os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + max(
-                                file_list) + '.exe')
-        except:
-            callback("Couldn't update driver automatically")
-        return max(file_list)
+    file_list = glob.glob("P:\\PACS\\Finance\\Automation\\Chromedrivers\\*")
+    latest_file = max(file_list, key=os.path.getctime)
+    try:
+        callback('Updating chrome driver to newer version')
+        print(latest_file[-6:])
+        shutil.copyfile(latest_file,
+                        os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + latest_file[-6:])
+        return latest_file[-6:]
+    except FileExistsError:
+        callback("File already exists")
+        return "null"
+    except:
+        callback("Couldn't update driver automatically")
+        return "null"
 
 
 # check the current driver version on your computer
@@ -127,18 +127,71 @@ def find_current_driver():
         return max(file_list)
 
 
+def getChromeVersion():
+    paths = [r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+             r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"]
+    parser = Dispatch("Scripting.FileSystemObject")
+    for p in paths:
+        try:
+            version = parser.GetFileVersion(p)
+        except:
+            version = None
+        if version is not None:
+            return version
+
+
+def downloadChromeDriver():
+    try:
+        callback("Downloading new chromedriver, this will take a couple of minutes.")
+        url = 'https://chromedriver.chromium.org/downloads'
+        page = requests.get(url, allow_redirects=True)
+        soup = BeautifulSoup(page.text, 'html.parser')
+        hyperlinks = soup.find_all('a', href=True)
+        version = str(getChromeVersion()[:2])
+        for h in hyperlinks:
+            try:
+                if h.string[:15] == "ChromeDriver " + version:
+                    h = h.string.split(" ")
+                    url = r"https://chromedriver.storage.googleapis.com/" + h[1] + "/chromedriver_win32.zip"
+                    break
+            except:
+                pass
+        page = requests.get(url)
+        z = zipfile.ZipFile(io.BytesIO(page.content))
+        z.extractall('P:\\PACS\\Finance\\Automation\\Chromedrivers\\')
+        file_list = glob.glob("P:\\PACS\\Finance\\Automation\\Chromedrivers\\*")
+        latest_file = max(file_list, key=os.path.getctime)
+        head, tail = os.path.split(latest_file)
+        tail = tail.replace(".", " " + version + ".")
+        try:
+            os.rename(latest_file, 'P:\\PACS\\Finance\\Automation\\Chromedrivers\\' + tail)
+        except FileExistsError:
+            pass
+    except:
+        print("There was a problem automatically downloading new chromedriver.  Please manually download.")
+
+
 class LoginPCC:
     def __init__(self):
         """Opens new Chrome instance and logs into PCC"""
         try:
+            """Run from documents folder first"""
             # chromedriver_autoinstaller.install()
             latestdriver = find_current_driver()
             self.driver = webdriver.Chrome(
                 os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
         except:
-            latestdriver = find_updated_driver()
-            self.driver = webdriver.Chrome(
-                os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
+            try:
+                """Download from shared drive if not in Documents"""
+                latestdriver = find_updated_driver()
+                self.driver = webdriver.Chrome(
+                    os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver))
+            except:
+                """Download from website if not on shared drive"""
+                downloadChromeDriver()
+                latestdriver = find_updated_driver()
+                self.driver = webdriver.Chrome(
+                    os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver))
         self.driver.get('https://login.pointclickcare.com/home/userLogin.xhtml')
         time.sleep(5)
         try:
@@ -504,7 +557,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2020.08.28")
+root.title("Providence Group AP Payments v2021.06.08")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
