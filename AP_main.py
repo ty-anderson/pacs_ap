@@ -1,17 +1,21 @@
-from tkinter import *
-import time
-import datetime
 import calendar
+import csv
+import datetime
+import glob
+import time
+from tkinter import *
+import io
+import os
+import pandas as pd
+import requests
+import shutil
+import zipfile
+from bs4 import BeautifulSoup
+from fuzzywuzzy import fuzz
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from fuzzywuzzy import fuzz
-import csv
-import pandas as pd
-import glob
 from win32com.client import Dispatch
-import requests, zipfile, io, shutil, os
-from bs4 import BeautifulSoup
 
 global fac
 global facname
@@ -135,34 +139,37 @@ def getChromeVersion():
         try:
             version = parser.GetFileVersion(p)
         except:
-            version = None
-        if version is not None:
-            return version
+            version = 'unknown'
+    return version
 
 
 def downloadChromeDriver():
+    """Download the chromedriver that matches version installed on local machine"""
     try:
         callback("Downloading new chromedriver, this will take a couple of minutes.")
-        url = 'https://chromedriver.chromium.org/downloads'
-        page = requests.get(url, allow_redirects=True)
-        soup = BeautifulSoup(page.text, 'html.parser')
-        hyperlinks = soup.find_all('a', href=True)
         version = str(getChromeVersion()[:2])
-        for h in hyperlinks:
-            try:
-                if h.string[:15] == "ChromeDriver " + version:
-                    h = h.string.split(" ")
-                    url = r"https://chromedriver.storage.googleapis.com/" + h[1] + "/chromedriver_win32.zip"
-                    break
-            except:
-                pass
-        page = requests.get(url)
-        z = zipfile.ZipFile(io.BytesIO(page.content))
-        z.extractall('P:\\PACS\\Finance\\Automation\\Chromedrivers\\')
-        file_list = glob.glob("P:\\PACS\\Finance\\Automation\\Chromedrivers\\*")
-        latest_file = max(file_list, key=os.path.getctime)
-        head, tail = os.path.split(latest_file)
-        tail = tail.replace(".", " " + version + ".")
+        if version == 'un':
+            raise NameError
+        else:
+            url = 'https://chromedriver.chromium.org/downloads'
+            page = requests.get(url)
+            soup = BeautifulSoup(page.text, 'html.parser')
+            hyperlinks = soup.find_all('a', href=True)
+            for h in hyperlinks:
+                try:
+                    if h.string[:15] == "ChromeDriver " + version:
+                        h = h.string.split(" ")
+                        url = r"https://chromedriver.storage.googleapis.com/" + h[1] + "/chromedriver_win32.zip"
+                        break
+                except:
+                    pass
+            page = requests.get(url)
+            z = zipfile.ZipFile(io.BytesIO(page.content))
+            z.extractall('P:\\PACS\\Finance\\Automation\\Chromedrivers\\')
+            file_list = glob.glob("P:\\PACS\\Finance\\Automation\\Chromedrivers\\*")
+            latest_file = max(file_list, key=os.path.getctime)
+            head, tail = os.path.split(latest_file)
+            tail = tail.replace(".", " " + version + ".")
         try:
             os.rename(latest_file, 'P:\\PACS\\Finance\\Automation\\Chromedrivers\\' + tail)
         except FileExistsError:
@@ -176,7 +183,6 @@ class LoginPCC:
         """Opens new Chrome instance and logs into PCC"""
         try:
             """Run from documents folder first"""
-            # chromedriver_autoinstaller.install()
             latestdriver = find_current_driver()
             self.driver = webdriver.Chrome(
                 os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
