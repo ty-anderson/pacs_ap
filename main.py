@@ -502,7 +502,7 @@ def Run_Import_Feeds():
                 callback(filename[:55])
                 filename_split = filename.split('_')
                 for c in filename_split:                                # parse filename text for BU
-                    if len(c) <= 2:
+                    if len(c) <= 3:
                         try:
                             bu_num = int(c)                                  # BU pulled from filename
                             bu = str(c)
@@ -563,7 +563,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2021.06.08")
+root.title("Providence Group AP Payments v2021.09.27")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
