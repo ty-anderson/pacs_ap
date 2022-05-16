@@ -1,21 +1,16 @@
 import calendar
 import csv
 import datetime
-import glob
 import time
 from tkinter import *
-import io
 import os
 import pandas as pd
-import requests
 import shutil
-import zipfile
-from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from win32com.client import Dispatch
+import chromedriver_autoinstaller
 
 global fac
 global facname
@@ -98,106 +93,15 @@ def write_to_csv(filename, building, date, total, entries):
             filewriter.writerow([building, date, total, entries])
 
 
-# get latest driver from the shared drive and add to user documents folder
-def find_updated_driver():
-    """Pulls newest chromdriver from shared drive if current isn't working"""
-    file_list = glob.glob("P:\\PACS\\Finance\\Automation\\Chromedrivers\\*")
-    latest_file = max(file_list, key=os.path.getctime)
-    try:
-        callback('Updating chrome driver to newer version')
-        print(latest_file[-6:])
-        shutil.copyfile(latest_file,
-                        os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + latest_file[-6:])
-        return latest_file[-6:]
-    except FileExistsError:
-        callback("File already exists")
-        return "null"
-    except:
-        callback("Couldn't update driver automatically")
-        return "null"
-
-
-# check the current driver version on your computer
-def find_current_driver():
-    """Use current chromedriver in Documents folder"""
-    folder = os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\'
-    file_list = []
-    if os.path.isdir(folder):
-        list_items = os.listdir(folder)
-        for item in list_items:
-            file = item.split(" ")
-            if file[0] == 'chromedriver':
-                file_list.append(file[1][:2])
-        return max(file_list)
-
-
-def getChromeVersion():
-    paths = [r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-             r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"]
-    parser = Dispatch("Scripting.FileSystemObject")
-    for p in paths:
-        try:
-            version = parser.GetFileVersion(p)
-        except:
-            version = 'unknown'
-    return version
-
-
-def downloadChromeDriver():
-    """Download the chromedriver that matches version installed on local machine"""
-    try:
-        callback("Downloading new chromedriver, this will take a couple of minutes.")
-        version = str(getChromeVersion()[:2])
-        if version == 'un':
-            raise NameError
-        else:
-            url = 'https://chromedriver.chromium.org/downloads'
-            page = requests.get(url)
-            soup = BeautifulSoup(page.text, 'html.parser')
-            hyperlinks = soup.find_all('a', href=True)
-            for h in hyperlinks:
-                try:
-                    if h.string[:15] == "ChromeDriver " + version:
-                        h = h.string.split(" ")
-                        url = r"https://chromedriver.storage.googleapis.com/" + h[1] + "/chromedriver_win32.zip"
-                        break
-                except:
-                    pass
-            page = requests.get(url)
-            z = zipfile.ZipFile(io.BytesIO(page.content))
-            z.extractall('P:\\PACS\\Finance\\Automation\\Chromedrivers\\')
-            file_list = glob.glob("P:\\PACS\\Finance\\Automation\\Chromedrivers\\*")
-            latest_file = max(file_list, key=os.path.getctime)
-            head, tail = os.path.split(latest_file)
-            tail = tail.replace(".", " " + version + ".")
-        try:
-            os.rename(latest_file, 'P:\\PACS\\Finance\\Automation\\Chromedrivers\\' + tail)
-        except FileExistsError:
-            pass
-    except:
-        print("There was a problem automatically downloading new chromedriver.  Please manually download.")
-
-
 class LoginPCC:
     def __init__(self):
         """Opens new Chrome instance and logs into PCC"""
         try:
             """Run from documents folder first"""
-            latestdriver = find_current_driver()
-            self.driver = webdriver.Chrome(
-                os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver) + '.exe')
+            driver = chromedriver_autoinstaller.install(cwd=True)
+            self.driver = webdriver.Chrome(driver)
         except:
-            try:
-                """Download from shared drive if not in Documents"""
-                latestdriver = find_updated_driver()
-                self.driver = webdriver.Chrome(
-                    os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver))
-            except:
-                """Download from website if not on shared drive"""
-                downloadChromeDriver()
-                latestdriver = find_updated_driver()
-                self.driver = webdriver.Chrome(
-                    os.environ['USERPROFILE'] + '\\Documents\\AP Check Runs\\chromedriver ' + str(latestdriver))
+           print("Issue with chromedriver autoinstaller")
         self.driver.get('https://login.pointclickcare.com/home/userLogin.xhtml')
         time.sleep(5)
         try:
@@ -844,7 +748,7 @@ except FileNotFoundError:  # IF VPN IS NOT CONNECTED THEN USE THE LAST ONE
         callback("data cannot be connected. Please connect to the VPN")
         faclistpath = ''
 
-facility_df = pd.read_excel(faclistpath, sheet_name='Automation', index_col=0)  # DATAFRAME FROM MASTER LISTING
+facility_df = pd.read_excel(faclistpath, sheet_name='AP Automation', index_col=0)  # DATAFRAME FROM MASTER LISTING
 for row in facility_df.itertuples():        # REMOVE ALF'S AND ILF'S
     if 'ALF' in row.Index or 'ILF' in row.Index:
         facility_df = facility_df.drop([row.Index])
