@@ -107,9 +107,11 @@ class LoginPCC:
         try:
             usernamex = self.driver.find_element(By.ID, 'username')
             usernamex.send_keys(usernametext)
+            self.driver.find_element(By.ID, 'id-next').click()
+            time.sleep(1)
             passwordx = self.driver.find_element(By.ID, 'password')
             passwordx.send_keys(passwordtext)
-            self.driver.find_element(By.ID, 'login-button').click()
+            self.driver.find_element(By.ID, 'id-submit').click()
         except:
             self.driver.get(
                 'https://www12.pointclickcare.com/home/login.jsp?ESOLGuid=40_1595946502980')  # security login page
@@ -467,7 +469,7 @@ def print_checkboxes():
 
 # tkinter start - GUI section---------------------------------------------------------
 root = Tk()  # create a GUI
-root.title("Providence Group AP Payments v2021.09.27")
+root.title("Providence Group AP Payments v2022.08.19")
 # root.geometry("%dx%d+%d+%d" % (700, 600, 1000, 200))
 root.resizable(False, False)
 
