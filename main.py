@@ -360,6 +360,7 @@ def Run_Check_Run(checkdate, paythrudate):
     global facname
     callback("Running Check Run")
     start_PCC()
+    time.sleep(10)
     for fac in facilitydict:
         facname = facilitydict[fac][1]
         bu = str(facilitydict[fac][0])
@@ -378,6 +379,7 @@ def Run_Check_Run_Post():
     """Post check batches in PCC with webscraper"""
     callback("Running Check Run Posting")
     start_PCC()
+    time.sleep(10)
     global fac
     for fac in facilitydict:
         bu = str(facilitydict[fac][0])
